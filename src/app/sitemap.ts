@@ -1,12 +1,16 @@
 import { MetadataRoute } from 'next';
+import { cacheLife, cacheTag } from 'next/cache';
+import { BLOG_INDEX_CACHE_TAG } from '@/lib/blogCache';
 import { getPostsProps } from '@/lib/getPosts';
 import { lastModified } from '@/static/constant';
-
-export const revalidate = 1200;
 
 const staticPaths = ['/post', '/profile', '/series', '/tags'];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  'use cache';
+  cacheLife({ revalidate: 1200 });
+  cacheTag(BLOG_INDEX_CACHE_TAG);
+
   const posts = await getPostsProps();
 
   const baseURL = process.env.NEXT_PUBLIC_URL!;

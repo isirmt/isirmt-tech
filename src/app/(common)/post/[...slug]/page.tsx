@@ -1,6 +1,7 @@
-import React, { cache } from 'react';
+import React from 'react';
 import '@/styles/post/style.css';
 import { Metadata } from 'next';
+import { cacheLife, cacheTag } from 'next/cache';
 import { BlogPosting, WithContext } from 'schema-dts';
 import JsonLd from '@/components/JsonLd';
 import ShareButtons from '@/components/ShareButtons';
@@ -8,6 +9,7 @@ import Article from '@/components/layout/ArticlePage';
 import { Main, SideMDShown } from '@/components/layout/PageLayout';
 import PostIndex from '@/components/post/PostIndex';
 import { generateMetadataTemplate } from '@/lib/SEO';
+import { getBlogPostCacheTag } from '@/lib/blogCache';
 import { getPost, getPostsProps } from '@/lib/getPosts';
 import { author } from '@/static/constant';
 
@@ -15,13 +17,14 @@ import { author } from '@/static/constant';
 // See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
 export const instant = false;
 
-export const revalidate = 300;
-export const dynamicParams = true;
+async function getFileContent(path: string) {
+  'use cache';
+  cacheLife({ revalidate: 300 });
+  cacheTag(getBlogPostCacheTag(path));
 
-const getFileContent = cache(async (path: string) => {
   const postPath = `${process.env.GIT_POSTS_DIR!}/${path}.md`;
   return await getPost(postPath);
-});
+}
 
 export async function generateStaticParams(): Promise<{ slug: string[] }[]> {
   const posts = await getPostsProps();
