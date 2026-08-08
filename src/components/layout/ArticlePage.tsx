@@ -9,8 +9,8 @@ import { getSeries } from '@/lib/getPosts';
 import { PostData } from '@/static/postType';
 import LoadingCircle from '../LoadingCircle';
 import { ExplainingBanner } from '../UserBanner';
+import CachedPostMarkdown from '../post/CachedPostMarkdown';
 import { CommentForm, CommentFormNoPosting } from '../post/CommentForm';
-import { PostMarkdown } from '../post/MarkdownElements';
 import SeriesCard from '../post/SeriesCard';
 
 export default async function Article({ data, content, slug }: { data: PostData; content: string; slug?: string }) {
@@ -53,7 +53,7 @@ export default async function Article({ data, content, slug }: { data: PostData;
         ) : (
           <></>
         )}
-        <PostMarkdown content={content} />
+        <CachedPostMarkdown content={content} />
         <Suspense fallback={<LoadingCircle />}>
           {issue && slug ? (
             issue.state === 'closed' ? (

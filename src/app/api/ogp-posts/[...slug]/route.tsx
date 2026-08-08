@@ -1,17 +1,30 @@
 import { promises as fs } from 'fs';
 import path from 'path';
+import { cacheLife, cacheTag } from 'next/cache';
 import { ImageResponse } from 'next/og';
 import { NextRequest, NextResponse } from 'next/server';
+import { getBlogPostCacheTag } from '@/lib/blogCache';
 import { getImage, getPost } from '@/lib/getPosts';
 import { getImageMimeType } from '@/lib/mime-getter';
 
-export const revalidate = 1200;
+const imageRevalidateSeconds = 1200;
 
-export async function GET(req: NextRequest, context: { params: Promise<{ slug: string[] }> }) {
-  const slug = decodeURIComponent((await context.params).slug.join('/'));
+async function getImageData(slug: string) {
+  'use cache';
+  cacheLife({ revalidate: imageRevalidateSeconds });
+  cacheTag(getBlogPostCacheTag(slug));
+
   const { data } = await getPost(`${process.env.GIT_POSTS_DIR!}/${slug}.md`);
   const font = await fs.readFile(path.join(process.cwd(), 'assets', 'NotoSansJP-ExtraBold-Sub.ttf'));
   const base64Image = data.thumbnail ? await getImage(data.thumbnail) : '';
+
+  return { data, font: font.toString('base64'), base64Image };
+}
+
+export async function GET(_req: NextRequest, context: { params: Promise<{ slug: string[] }> }) {
+  const slug = decodeURIComponent((await context.params).slug.join('/'));
+  const { data, font: fontBase64, base64Image } = await getImageData(slug);
+  const font = Buffer.from(fontBase64, 'base64');
 
   if ((data.thumbnail && base64Image === '') || !data.thumbnail)
     return new ImageResponse(

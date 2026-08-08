@@ -1,19 +1,23 @@
+import { cacheLife, cacheTag } from 'next/cache';
 import { NextRequest } from 'next/server';
 import Rss from 'rss';
+import { BLOG_INDEX_CACHE_TAG } from '@/lib/blogCache';
 import { getPostsProps } from '@/lib/getPosts';
 import { siteName } from '@/static/constant';
 import { lastModified } from '@/static/constant';
 
-export const revalidate = 1200;
-
 const baseURL = process.env.NEXT_PUBLIC_URL!;
+const feedRevalidateSeconds = 1200;
 
-export async function GET(req: NextRequest, context: { params: Promise<{ slug: string }> }) {
-  const slug = decodeURIComponent((await context.params).slug);
+async function getFeedXml(slug: string, encodedSlug: string) {
+  'use cache';
+  cacheLife({ revalidate: feedRevalidateSeconds });
+  cacheTag(BLOG_INDEX_CACHE_TAG);
+
   const feed = new Rss({
     title: `${siteName}のタグ「#${slug}」の新着投稿`,
     description: `「${siteName}」のタグ「#${slug}」の投稿フィード`,
-    feed_url: `${baseURL}/tags/${(await context.params).slug}/feed`,
+    feed_url: `${baseURL}/tags/${encodedSlug}/feed`,
     site_url: baseURL,
     language: 'ja',
   });
@@ -30,10 +34,18 @@ export async function GET(req: NextRequest, context: { params: Promise<{ slug: s
     }),
   );
 
-  return new Response(feed.xml(), {
+  return feed.xml();
+}
+
+export async function GET(_req: NextRequest, context: { params: Promise<{ slug: string }> }) {
+  const { slug: encodedSlug } = await context.params;
+  const slug = decodeURIComponent(encodedSlug);
+  const feedXml = await getFeedXml(slug, encodedSlug);
+
+  return new Response(feedXml, {
     headers: {
       'Content-Type': 'application/xml',
-      'Cache-Control': `s-maxage=${revalidate}, stale-while-revalidate`,
+      'Cache-Control': `s-maxage=${feedRevalidateSeconds}, stale-while-revalidate`,
     },
   });
 }

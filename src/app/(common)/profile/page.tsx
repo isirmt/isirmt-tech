@@ -8,6 +8,10 @@ import { generateMetadataTemplate } from '@/lib/SEO';
 import { getPost } from '@/lib/getPosts';
 import { author, siteName } from '@/static/constant';
 
+// TODO: Cache Components adoption. Refactor this route so this opt-out can be removed.
+// See: https://nextjs.org/docs/app/guides/migrating-to-cache-components
+export const instant = false;
+
 const getFileContent = cache(async () => {
   const postPath = `${process.env.GIT_PROFILE_PATH!}`;
   return await getPost(postPath);
